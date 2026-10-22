@@ -90,13 +90,13 @@ func TestInvalidNewOperations(t *testing.T) {
 		{"nrange_empty", query.Number, query.NotRange, query.Range{}},
 		{"nrange_string", query.String, query.NotRange, query.Range{From: "a"}},
 		{"array_eq", query.StringArray, query.EQ, "a"},
-		{"array_bad_element", query.IntegerArray, query.In, []any{1}},
+		{"array_bad_element", query.IntegerArray, query.In, []any{"one"}},
 		{"array_empty_input", query.UUIDArray, query.In, []any{}},
 		{"array_null_input", query.StringArray, query.NotIn, []any{nil}},
 		{"array_typed_list", query.StringArray, query.In, []string{"a"}},
 		{"array_substring_list", query.StringArray, query.Contains, []any{"a"}},
 		{"array_uuid_contains", query.UUIDArray, query.Contains, "a"},
-		{"counter_bad_type", query.Counter, query.RangeOp, query.Range{From: 1}},
+		{"counter_bad_type", query.Counter, query.RangeOp, query.Range{From: "1.5"}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			base := sqlbuilder.PostgreSQL.NewSelectBuilder().Select("x").From("items")

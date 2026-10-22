@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"log"
-	"time"
 
 	"example.com/huandu-v3/query"
 	sqlbuilder "github.com/huandu/go-sqlbuilder"
@@ -25,9 +24,9 @@ func main() {
 		"importance":      {{Op: query.In, Value: []any{"critical", "high"}}},
 		"ip":              {{Op: query.Contains, Value: "192.168."}},
 		"owners":          {{Op: query.In, Value: []any{"00000000-0000-0000-0000-000000000001"}}},
-		"ports":           {{Op: query.NotIn, Value: []any{int64(23), int64(3389)}}},
-		"lastSeenOnline":  {{Op: query.RangeOp, Value: query.Range{From: time.Date(2026, 9, 1, 0, 0, 0, 0, time.UTC)}}},
-		"vulnerabilities": {{Op: query.RangeOp, Value: query.Range{From: int64(10)}}},
+		"ports":           {{Op: query.NotIn, Value: []any{"23", 3389}}},
+		"lastSeenOnline":  {{Op: query.RangeOp, Value: query.Range{From: "2026-09-01T00:00:00Z"}}},
+		"vulnerabilities": {{Op: query.RangeOp, Value: query.Range{From: "10"}}},
 	}
 	base := sqlbuilder.PostgreSQL.NewSelectBuilder().Select("a.id", "a.name").From("assets AS a")
 	base.Where(base.Equal("a.tenant_id", int64(42)))

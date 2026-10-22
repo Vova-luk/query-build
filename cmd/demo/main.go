@@ -15,8 +15,9 @@ func main() {
 		"status": {Column: "a.status", Type: query.String, Operators: []query.Operator{query.EQ, query.In}},
 		"owner":  {Column: "o.name", Type: query.String, Operators: []query.Operator{query.EQ, query.ILike}},
 	}
+	// Numeric strings are parsed; Go numbers retain their original types.
 	filters := query.Filters{
-		"score":  {{Op: query.Between, Value: query.Range{From: 7.0, To: 9.0}}, {Op: query.RangeOp, Value: query.Range{From: 10.0}}},
+		"score":  {{Op: query.Between, Value: query.Range{From: "7", To: "9"}}, {Op: query.RangeOp, Value: query.Range{From: 10}}},
 		"status": {{Op: query.EQ, Value: "active"}, {Op: query.EQ, Value: "pending"}},
 		"owner":  {{Op: query.ILike, Value: "%team%"}},
 	}

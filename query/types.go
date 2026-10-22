@@ -47,9 +47,12 @@ const (
 )
 
 // Condition belongs to the field containing it in Filters.
-// Values must be prepared: string, int64, float64, bool, time.Time or []byte.
-// IN takes []any of prepared scalars; BETWEEN/range takes Range.
-// No parsing, numeric conversion, pointer or driver.Valuer unwrapping is done.
+// Values are prepared according to Field.Type: integer/number/bool/date strings
+// are parsed, and finite Go numeric values keep their original type and value.
+// Integer, Counter and Number all accept both integer and floating-point values.
+// IN takes []any; BETWEEN/range takes Range. Their elements/bounds are prepared
+// individually. Strings are never inferred from numbers or arbitrary objects.
+// Pointers and driver.Valuer are not unwrapped.
 // nil means SQL NULL for EQ/NE. Empty/NotEmpty take no value.
 // Array IN accepts []any of element values; array Contains accepts a substring.
 type Condition struct {

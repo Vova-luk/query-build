@@ -11,47 +11,30 @@ func compile(sb *sqlbuilder.SelectBuilder, column string, typ ValueType, conditi
 	if err := checkOperator(typ, condition.Op); err != nil {
 		return "", err
 	}
-	if element, ok := arrayElement(typ); ok {
-		return compileArray(sb, column, element, condition)
+	element, isArray := arrayElement(typ)
+	if isArray && sb.Flavor() != sqlbuilder.PostgreSQL {
+		return "", fmt.Errorf("native array filters require PostgreSQL")
+	}
+	condition, err := prepareCondition(typ, condition)
+	if err != nil {
+		return "", err
+	}
+	if isArray {
+		return compileArray(sb, column, element, condition), nil
 	}
 	switch condition.Op {
 	case Empty, NotEmpty:
-		if condition.Value != nil {
-			return "", fmt.Errorf("%s takes no value", condition.Op)
-		}
 		if condition.Op == Empty {
 			return sb.IsNull(column), nil
 		}
 		return sb.IsNotNull(column), nil
 	case In, NotIn:
-		items, err := checkedList(condition.Value, typ)
-		if err != nil {
-			return "", err
-		}
+		items := condition.Value.([]any)
 		return membership(sb, column, typ, items, condition.Op == NotIn), nil
 	case Contains, NotContains:
-		if err := validateValue(condition.Value, String); err != nil {
-			return "", err
-		}
 		return substring(sb, column, condition.Value.(string), condition.Op == NotContains), nil
 	case Between, RangeOp, NotRange:
-		bounds, ok := condition.Value.(Range)
-		if !ok {
-			return "", fmt.Errorf("%s requires query.Range", condition.Op)
-		}
-		if bounds.From == nil && bounds.To == nil || condition.Op == Between && (bounds.From == nil || bounds.To == nil) {
-			return "", fmt.Errorf("between needs both bounds; range needs at least one")
-		}
-		if bounds.From != nil {
-			if err := validateValue(bounds.From, typ); err != nil {
-				return "", fmt.Errorf("from: %w", err)
-			}
-		}
-		if bounds.To != nil {
-			if err := validateValue(bounds.To, typ); err != nil {
-				return "", fmt.Errorf("to: %w", err)
-			}
-		}
+		bounds := condition.Value.(Range)
 		switch {
 		case bounds.From != nil && bounds.To != nil:
 			if condition.Op == NotRange {
@@ -78,9 +61,6 @@ func compile(sb *sqlbuilder.SelectBuilder, column string, typ ValueType, conditi
 			case NE:
 				return sb.IsNotNull(column), nil
 			}
-		}
-		if err := validateValue(value, typ); err != nil {
-			return "", err
 		}
 		if (condition.Op == EQ || condition.Op == NE) && (typ == String || typ == Enum) {
 			column = "LOWER(" + textColumn(sb.Flavor(), column, typ) + ")"
@@ -139,19 +119,6 @@ func checkOperator(typ ValueType, op Operator) error {
 		return fmt.Errorf("unsupported operator %q", op)
 	}
 	return fmt.Errorf("operator %q is not supported for type %q", op, typ)
-}
-
-func checkedList(value any, typ ValueType) ([]any, error) {
-	items, ok := value.([]any)
-	if !ok || len(items) == 0 {
-		return nil, fmt.Errorf("in/not_in requires a nonempty []any")
-	}
-	for i, item := range items {
-		if err := validateValue(item, typ); err != nil {
-			return nil, fmt.Errorf("value[%d]: %w", i, err)
-		}
-	}
-	return items, nil
 }
 
 // Enum labels are compared as text, including native PostgreSQL enum columns.
